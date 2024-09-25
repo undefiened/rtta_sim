@@ -1,0 +1,32 @@
+version '1.0-SNAPSHOT'
+
+buildscript {
+    ext.geometry_api_version = '2.0.0'
+
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath "com.esri.geometry:esri-geometry-api:$geometry_api_version"
+    }
+}
+
+
+apply plugin: 'java'
+
+repositories {
+    mavenCentral()
+    flatDir {
+        dirs 'src/libraries/geom/lib'
+    }
+}
+
+dependencies {
+    implementation "com.esri.geometry:esri-geometry-api:$geometry_api_version"
+//    compile group: 'math.geom2d', name: 'javaGeom', version: '0.11.1'
+    implementation 'com.google.code.gson:gson:2.8.2'
+    implementation 'org.jgrapht:jgrapht-core:1.1.0'
+    implementation name: 'gpcj-2.2.0'
+    implementation group: 'com.googlecode.json-simple', name: 'json-simple', version: '1.1.1'
+    testImplementation group: 'junit', name: 'junit', version: '4.11'
+}
