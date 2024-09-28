@@ -14,62 +14,56 @@ public class RunGDPSimulation {
     public static void main(String[] args) throws Exception {
 //        int[] ns = {10, 100, 1000, 5000, 10000, 20000, 30000, 40000, 50000};
 //        int[] ns = {10, 100, 1000, 5000, 10000, 20000, 30000};
-        int[] ns = {30000};
+        int[] ns = {50000};
 //        double[] safetyZones = {50, 100, 150, 200, 250, 300};
 //        double[] safetyZones = {10, 50, 100, 150, 200, 300};
-        double[] safetyZones = {150};
+        double[] safetyZones = {200, 300};
         double[] RTTAs = {60*5, 60*10, 60*15, 60*20, 60*25, 60*30, 60*35, 60*40, 60*45, 60*50, 60*55, 60*60,
                           60*65, 60*70, 60*75, 60*80, 60*85, 60*90, 60*95, 60*100, 60*105, 60*110, 60*115, 60*120,
                           60*125, 60*130, 60*135, 60*140, 60*145, 60*150, 60*155, 60*160, 60*165, 60*170, 60*175, 60*180,
                           60*185, 60*190, 60*195, 60*200, 60*205, 60*210, 60*215, 60*220, 60*225, 60*230, 60*235, 60*240,
         };
+//        double[] RTTAs = {60*10, 60*40, 60*60, 60*120};
+//        double[] RTTAs = {60*170};
         int numberOfDronesToTest = 50000;
         String region = "nk";
 //        region = "bay";
 
-//        for (int n :
-//                ns) {
-//            for (double safetyZone :
-//                    safetyZones) {
-//                simulate(n, safetyZone, region);
-//                System.gc();
-//            }
-//        }
-        Vector<Long> res = new Vector<>();
 
-        JSONArray results = new JSONArray();
+
+
 
         for (double safetyZone :
                 safetyZones) {
             for (int n :
                     ns) {
+//                JSONArray results = new JSONArray();
+                JSONArray res = new JSONArray();
                 for (double RTTA: RTTAs) {
-                    res.add(simulate(n, safetyZone, RTTA, region));
-                }
-//                System.out.println("-------------------------------------------");
-//                System.out.println(n + " " + safetyZone);
-//                System.out.println("-------------------------------------------");
-//                long numOfNewConflicts = countNumberOfConflictsWithDeconflictedSimulation(n, numberOfDronesToTest, safetyZone, region);
-                JSONArray drones = new JSONArray();
+                    RTTAGDPSimulation simulationResult = simulate(n, safetyZone, RTTA, region);
+                    JSONObject serializedResult = new JSONObject();
 
-                for r
+                    serializedResult.put("RTTA", RTTA);
+                    serializedResult.put("drones", simulationResult.getSerializedResults());
+                    res.add(serializedResult);
+                }
+
 
                 JSONObject obj = new JSONObject();
-//                obj.put("numOfNewConflicts", numOfNewConflicts);
-//                obj.put("numberOfDronesToTest", numberOfDronesToTest);
                 obj.put("safetyZone", safetyZone);
                 obj.put("n", n);
-                obj.put("drones", drones);
-                results.add(obj);
+                obj.put("res", res);
+                Files.write(Paths.get( "results/RTTA_" + n + "_" + safetyZone + ".json"), obj.toJSONString().getBytes());
+//                results.add(obj);
                 System.gc();
             }
         }
 
-        System.out.println(results.toJSONString());
-        Files.write(Paths.get( "results/res_num_new_conflicts.json"), results.toJSONString().getBytes());
+//        System.out.println(results.toJSONString());
+//        Files.write(Paths.get( "results/res_num_new_conflicts.json"), results.toJSONString().getBytes());
     }
 
-    public static Long simulate(int n, double safetyZone, double RTTA, String region) throws Exception {
+    public static RTTAGDPSimulation simulate(int n, double safetyZone, double RTTA, String region) throws Exception {
         System.out.println("-------------------------------------------");
         System.out.println(n + " " + safetyZone);
         System.out.println("-------------------------------------------");
@@ -101,7 +95,7 @@ public class RunGDPSimulation {
         return (long) sim.numberOfNewConflicts;
     }
 
-    public static Long gdpSimulation(int n, double safetyZone, double RTTA, String region) throws Exception {
+    public static RTTAGDPSimulation gdpSimulation(int n, double safetyZone, double RTTA, String region) throws Exception {
         System.out.println("Start of GDP simulation");
         int maxDelay = 60*15;
         RTTAGDPSimulation sim2 = new RTTAGDPSimulation(
@@ -131,7 +125,7 @@ public class RunGDPSimulation {
         System.out.format("Number of overdelayed drones: %d%n", overdelayedDrones);
         System.out.format("Number of scheduled cancelled drones: %d%n", cancelledScheduled);
         System.out.format("Max start time: %f%n", sim2.launchedDrones.stream().filter(x -> !x.cancelsBeforeStart).mapToDouble(x -> x.startTime).max().getAsDouble());
-        return overdelayedDrones;
+        return sim2;
     }
 
     public static void saveResultsToFile(Object object, String filename, String region, int n, double safetyZone) throws IOException {

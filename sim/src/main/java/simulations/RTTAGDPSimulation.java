@@ -49,37 +49,59 @@ public class RTTAGDPSimulation extends Simulation {
 
 
         resolveAllConflicts();
-        saveStatisticsToFile();
+//        saveStatisticsToFile();
     }
 
-    private void saveStatisticsToFile() throws IOException {
-        JSONArray delays = new JSONArray();
-        JSONObject sampleObject = new JSONObject();
+    public JSONArray getSerializedResults(){
+        JSONArray drones = new JSONArray();
 
+        for (Drone drone: this.launchedDrones) {
+            JSONObject serializedDrone = new JSONObject();
+            serializedDrone.put("intent_arrival", drone.getIntentArrivalTime());
+            serializedDrone.put("desired_start", drone.getOriginalStartTime());
+            serializedDrone.put("actual_start", drone.startTime);
+            serializedDrone.put("delay", drone.totalDelay);
+            serializedDrone.put("was_cancelled", drone.isCancelsBeforeStart());
+            serializedDrone.put("cancel_decision_time", drone.getCancelDecisionTime());
+            serializedDrone.put("scheduling_time", drone.getRTTATime(this.RTTA));
+            serializedDrone.put("cancelled_after_RTTA", drone.cancelsBeforeStart && drone.getRTTATime(this.RTTA) <= drone.getCancelDecisionTime());
+            serializedDrone.put("ID", drone.getID());
+            serializedDrone.put("type", drone.getType());
 
-        System.out.println("Original start times");
-        System.out.println(this.launchedDrones.stream().mapToDouble(x -> x.getOriginalStartTime()).distinct().count());
-        System.out.println((long) this.launchedDrones.size());
-
-        for (Drone d :
-                this.launchedDrones.stream().sorted(Comparator.comparingDouble(Drone::getOriginalStartTime)).collect(Collectors.toList())) {
-            if (!d.cancelsBeforeStart) {
-                delays.add(d.totalDelay);
-//                delays.add(d.startTime);
-            }
+            drones.add(serializedDrone);
         }
 
-        sampleObject.put("res", delays);
-
-        String folderName = "results";
-
-        if(!region.equals("nk")){
-            folderName = "results_bay";
-        }
-
-        String filename = String.format("%d_%.2f_%d.json", this.n, this.safetyZone, Math.round(this.RTTA));
-        Files.write(Paths.get(folderName + "/" + filename), sampleObject.toJSONString().getBytes());
+        return drones;
     }
+
+//    private void saveStatisticsToFile() throws IOException {
+//        JSONArray delays = new JSONArray();
+//        JSONObject sampleObject = new JSONObject();
+//
+//
+//        System.out.println("Original start times");
+//        System.out.println(this.launchedDrones.stream().mapToDouble(x -> x.getOriginalStartTime()).distinct().count());
+//        System.out.println((long) this.launchedDrones.size());
+//
+//        for (Drone d :
+//                this.launchedDrones.stream().sorted(Comparator.comparingDouble(Drone::getOriginalStartTime)).collect(Collectors.toList())) {
+//            if (!d.cancelsBeforeStart) {
+//                delays.add(d.totalDelay);
+////                delays.add(d.startTime);
+//            }
+//        }
+//
+//        sampleObject.put("res", delays);
+//
+//        String folderName = "results";
+//
+//        if(!region.equals("nk")){
+//            folderName = "results_bay";
+//        }
+//
+//        String filename = String.format("%d_%.2f_%d.json", this.n, this.safetyZone, Math.round(this.RTTA));
+//        Files.write(Paths.get(folderName + "/" + filename), sampleObject.toJSONString().getBytes());
+//    }
 
     protected void loadDrones(int n, String region){
         dronesToLaunch = new PriorityQueue<>(new DroneComparatorEarliestRTTATime(this.RTTA));
@@ -133,7 +155,12 @@ public class RTTAGDPSimulation extends Simulation {
                         params.speedPxS
                 );
 
+                Random randType = new Random(droneJsonObj.toString().hashCode());
+                Random randID = new Random(droneJsonObj.toString().hashCode());
+
                 newDrone.setIntentArrivalTime(newDrone.startTime - randIntentArrivalTime.nextInt((max - min) + 1) + min);
+                newDrone.setID(randID.nextLong(0, Long.MAX_VALUE));
+                newDrone.setType(randType.nextInt(1, 10));
 
                 double prob = probOfCancellation.apply( - (newDrone.getIntentArrivalTime() - newDrone.startTime));
                 boolean cancel = randCancellation.nextDouble() < prob;

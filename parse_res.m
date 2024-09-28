@@ -1,18 +1,20 @@
 close all; clear;
 
-RTTAs = [60*5, 60*10, 60*15, 60*20, 60*25, 60*30, 60*35, 60*40, 60*45, 60*50, 60*55, 60*60, 60*65, 60*70, 60*75, 60*80, 60*85, 60*90, 60*95, 60*100, 60*105, 60*110, 60*115, 60*120, 60*125, 60*130, 60*135, 60*140, 60*145, 60*150, 60*155, 60*160, 60*165, 60*170, 60*175, 60*180, 60*185, 60*190, 60*195, 60*200, 60*205, 60*210, 60*215, 60*220, 60*225, 60*230, 60*235, 60*240];
+Ns = [1000, 5000, 10000, 20000, 30000, 40000];
+rs = [10, 50, 100, 150, 200];
 
-r = 300; %meters
+for N=Ns
+    for r=rs
+        filename = ['./results/RTTA_', num2str(N), '_', num2str(r), '.0.json'];
 
-all_results = [];
+        data = jsondecode(fileread(filename));
 
-for i=1:length(RTTAs)
-    RTTA = RTTAs(i);
-    
-    filename = ['./results/5000_39.30_' num2str(RTTA) '.json'];
-    
-    data = jsondecode(fileread(filename)).res;
-    all_results(i, :) = data;
+        for i=1:length(data.res)
+            start_times = [data.res(i).drones.desired_start];
+            [~, sortIdx] = sort(start_times);
+            data.res(i).drones = struct2table(data.res(i).drones(sortIdx));
+        end
+
+        save(['./results_converted/RTTA_', num2str(N), '_', num2str(r), '.0.mat'], "data", "-v7.3");
+    end
 end
-
-save('delays_300_m.mat','RTTAs', 'all_results', 'r');

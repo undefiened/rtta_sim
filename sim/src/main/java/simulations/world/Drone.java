@@ -36,12 +36,15 @@ public class Drone implements /*Comparable<Drone>, */Serializable, datastructure
     public double intentArrivalTime = 0;
     public boolean cancelsBeforeStart = false;
     public double cancelDecisionTime = 0;
+    public Long ID;
+    public int type;
 
 
     public Drone(Vector2D start, Vector2D end, double startTime, double safetyZoneRadius, double speed) {
         this.start = start;
         this.end = end;
         this.startTime = startTime;
+        this.originalStartTime = startTime;
         this.safetyZoneRadius = safetyZoneRadius;
         this.speed = speed;
         this.endTime = computeEndTime();
@@ -51,6 +54,7 @@ public class Drone implements /*Comparable<Drone>, */Serializable, datastructure
         this.start = start;
         this.end = end;
         this.startTime = startTime;
+        this.originalStartTime = startTime;
         this.safetyZoneRadius = safetyZoneRadius;
         this.speed = speed;
         this.endTime = endTime;
@@ -61,10 +65,6 @@ public class Drone implements /*Comparable<Drone>, */Serializable, datastructure
     }
 
     public void delay(double time){
-        if(originalStartTime < 0){
-            setOriginalStartTime(startTime);
-        }
-
         totalDelay += time;
         startTime += time;
         endTime = computeEndTime();
@@ -108,15 +108,7 @@ public class Drone implements /*Comparable<Drone>, */Serializable, datastructure
     }
 
     public double getOriginalStartTime(){
-        if(!isOriginal()){
-            return originalDrone.getOriginalStartTime();
-        }
-
-        if(originalStartTime < 0){
-            return startTime;
-        }
-
-        return originalStartTime;
+         return originalStartTime;
     }
 
     public void setOriginalStartTime(double originalStartTime){
@@ -220,4 +212,19 @@ public class Drone implements /*Comparable<Drone>, */Serializable, datastructure
         }
     }
 
+    public int getType() {
+        return type;
+    }
+
+    public void setType(int type) {
+        this.type = type;
+    }
+
+    public Long getID() {
+        return ID;
+    }
+
+    public void setID(Long ID) {
+        this.ID = ID;
+    }
 }

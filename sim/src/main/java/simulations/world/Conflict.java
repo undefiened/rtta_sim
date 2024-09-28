@@ -94,7 +94,7 @@ public class Conflict implements Serializable {
             delay += 1;
         }
 
-        return Math.min(delay, anotherDrone.endTime-mainDrone.startTime);
+        return Math.min(delay, anotherDrone.endTime-mainDrone.startTime + 0.01);
     }
 
     public boolean areStillInConflict(double delay) throws Exception {
