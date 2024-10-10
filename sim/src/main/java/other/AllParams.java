@@ -39,6 +39,7 @@ public class AllParams implements Serializable{
         allParams.put("bay", new Params(6.7f, 90f));
         allParams.put("bay_noise", new Params(6.7f, 60f));
         allParams.put("nk", new Params(131, 90f, 1));
+        allParams.put("nk_20ms", new Params(131, 72f, 1));
         allParams.put("nk_noise", new Params(131, 60f));
         allParams.put("test_area", new Params(1, 30f));
 

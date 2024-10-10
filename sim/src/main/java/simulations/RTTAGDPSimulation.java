@@ -33,8 +33,11 @@ public class RTTAGDPSimulation extends Simulation {
 
     private int maxTimeBeforeIntendedStart;
 
+    public double weatherCoefficient;
+
     public RTTAGDPSimulation(int n, double safetyZone, String region, double RTTA, int maxTimeBeforeIntendedStart,
-                             double maxDelay, DoubleFunction<Double> longDelayCost, DoubleFunction<Double> probOfCancellation
+                             double maxDelay, DoubleFunction<Double> longDelayCost, DoubleFunction<Double> probOfCancellation,
+                             double weatherCoefficient
                             ) throws Exception {
         super(n, safetyZone, region);
         this.n = n;
@@ -44,6 +47,8 @@ public class RTTAGDPSimulation extends Simulation {
         this.RTTA = RTTA;
         this.maxDelay = maxDelay;
         this.longDelayCost = longDelayCost;
+
+        this.weatherCoefficient = weatherCoefficient;
 
         loadDrones(n, region);
 
@@ -57,6 +62,14 @@ public class RTTAGDPSimulation extends Simulation {
 
         for (Drone drone: this.launchedDrones) {
             JSONObject serializedDrone = new JSONObject();
+            JSONArray from = new JSONArray();
+            JSONArray to = new JSONArray();
+            from.add(drone.start.x());
+            from.add(drone.start.y());
+
+            to.add(drone.end.x());
+            to.add(drone.end.y());
+
             serializedDrone.put("intent_arrival", drone.getIntentArrivalTime());
             serializedDrone.put("desired_start", drone.getOriginalStartTime());
             serializedDrone.put("actual_start", drone.startTime);
@@ -65,6 +78,9 @@ public class RTTAGDPSimulation extends Simulation {
             serializedDrone.put("cancel_decision_time", drone.getCancelDecisionTime());
             serializedDrone.put("scheduling_time", drone.getRTTATime(this.RTTA));
             serializedDrone.put("cancelled_after_RTTA", drone.cancelsBeforeStart && drone.getRTTATime(this.RTTA) <= drone.getCancelDecisionTime());
+            serializedDrone.put("num_confl", drone.resolvedDrones.size());
+            serializedDrone.put("from", from);
+            serializedDrone.put("to", to);
             serializedDrone.put("ID", drone.getID());
             serializedDrone.put("type", drone.getType());
 
@@ -128,6 +144,7 @@ public class RTTAGDPSimulation extends Simulation {
         Random randIntentArrivalTime = new Random(SEED);
         Random randCancellation = new Random(SEED);
         Random randCancelDecisionTime = new Random(SEED);
+        Random randStartTime = new Random(SEED);
 
         int max = this.maxTimeBeforeIntendedStart;
         int min = 0;
@@ -141,11 +158,14 @@ public class RTTAGDPSimulation extends Simulation {
                 JsonObject droneJsonObj = (JsonObject)dronesArray.get(i);
                 JsonArray start = (JsonArray)droneJsonObj.get("start");
                 JsonArray end = (JsonArray)droneJsonObj.get("end");
-                double startTime = droneJsonObj.get("start_time").getAsInt();
+//                double startTime = droneJsonObj.get("start_time").getAsInt();
+                double startTime = randStartTime.nextInt(12*60*60);
 
                 while (isStartTimeAlreadyPresent(startTime)) {
                     startTime = startTime + 0.01;
                 }
+
+                double intentArrivalTime = startTime - randIntentArrivalTime.nextInt((max - min) + 1) + min;
 
                 Drone newDrone = new Drone(
                         new Vector2D(start.get(1).getAsInt(), start.get(0).getAsInt()),
@@ -158,9 +178,14 @@ public class RTTAGDPSimulation extends Simulation {
                 Random randType = new Random(droneJsonObj.toString().hashCode());
                 Random randID = new Random(droneJsonObj.toString().hashCode());
 
-                newDrone.setIntentArrivalTime(newDrone.startTime - randIntentArrivalTime.nextInt((max - min) + 1) + min);
-                newDrone.setID(randID.nextLong(0, Long.MAX_VALUE));
+                newDrone.setIntentArrivalTime(intentArrivalTime);
+//                newDrone.setID(randID.nextLong(0, Long.MAX_VALUE));
+                newDrone.setID((long) i);
                 newDrone.setType(randType.nextInt(1, 10));
+
+                double weatherUncertaintyInfluence = (newDrone.getOriginalStartTime() - newDrone.getRTTATime(this.RTTA)) * this.weatherCoefficient;
+
+                newDrone.setSafetyZoneRadius(newDrone.getSafetyZoneRadius() + params.convertMToPx(weatherUncertaintyInfluence));
 
                 double prob = probOfCancellation.apply( - (newDrone.getIntentArrivalTime() - newDrone.startTime));
                 boolean cancel = randCancellation.nextDouble() < prob;

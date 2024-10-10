@@ -205,10 +205,10 @@ public class Drone implements /*Comparable<Drone>, */Serializable, datastructure
     }
 
     public double getRTTATime(double RTTA) {
-        if (this.getIntentArrivalTime() > this.startTime - RTTA) {
+        if (this.getIntentArrivalTime() > this.originalStartTime - RTTA) {
             return this.getIntentArrivalTime();
         } else {
-            return this.startTime - RTTA;
+            return this.originalStartTime - RTTA;
         }
     }
 
@@ -226,5 +226,13 @@ public class Drone implements /*Comparable<Drone>, */Serializable, datastructure
 
     public void setID(Long ID) {
         this.ID = ID;
+    }
+
+    public double getSafetyZoneRadius() {
+        return safetyZoneRadius;
+    }
+
+    public void setSafetyZoneRadius(double safetyZoneRadius) {
+        this.safetyZoneRadius = safetyZoneRadius;
     }
 }
