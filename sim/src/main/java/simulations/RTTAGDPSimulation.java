@@ -30,6 +30,9 @@ public class RTTAGDPSimulation extends Simulation {
     private final DoubleFunction<Double> longDelayCost;
     public int numberOfConflicts = 0;
     private final int n;
+    protected double speedMS;
+    protected double speedPxS;
+    protected double probabilityOfPriority;
 
     private int maxTimeBeforeIntendedStart;
 
@@ -37,18 +40,21 @@ public class RTTAGDPSimulation extends Simulation {
 
     public RTTAGDPSimulation(int n, double safetyZone, String region, double RTTA, int maxTimeBeforeIntendedStart,
                              double maxDelay, DoubleFunction<Double> longDelayCost, DoubleFunction<Double> probOfCancellation,
-                             double weatherCoefficient
+                             double weatherCoefficient, double speedMS, double probabilityOfPriority
                             ) throws Exception {
         super(n, safetyZone, region);
         this.n = n;
         this.maxTimeBeforeIntendedStart = maxTimeBeforeIntendedStart;
         this.probOfCancellation = probOfCancellation;
+        this.speedMS = speedMS;
+        this.speedPxS = params.convertMToPx(speedMS);
 
         this.RTTA = RTTA;
         this.maxDelay = maxDelay;
         this.longDelayCost = longDelayCost;
 
         this.weatherCoefficient = weatherCoefficient;
+        this.probabilityOfPriority = probabilityOfPriority;
 
         loadDrones(n, region);
 
@@ -83,6 +89,8 @@ public class RTTAGDPSimulation extends Simulation {
             serializedDrone.put("to", to);
             serializedDrone.put("ID", drone.getID());
             serializedDrone.put("type", drone.getType());
+            serializedDrone.put("is_priority", drone.isPriority);
+            serializedDrone.put("delay_due_priority", drone.delayDueRescheduling);
 
             drones.add(serializedDrone);
         }
@@ -143,6 +151,7 @@ public class RTTAGDPSimulation extends Simulation {
     public void fillDrones(int n, String region){
         Random randIntentArrivalTime = new Random(SEED);
         Random randCancellation = new Random(SEED);
+        Random randPriority = new Random(SEED);
         Random randCancelDecisionTime = new Random(SEED);
         Random randStartTime = new Random(SEED);
 
@@ -167,13 +176,21 @@ public class RTTAGDPSimulation extends Simulation {
 
                 double intentArrivalTime = startTime - randIntentArrivalTime.nextInt((max - min) + 1) + min;
 
+                boolean isPriority = randPriority.nextDouble() < probabilityOfPriority;
+
+//                if (isPriority) {
+//                    intentArrivalTime = startTime;
+//                }
+
                 Drone newDrone = new Drone(
                         new Vector2D(start.get(1).getAsInt(), start.get(0).getAsInt()),
                         new Vector2D(end.get(1).getAsInt(), end.get(0).getAsInt()),
                         startTime,
                         safetyZone,
-                        params.speedPxS
+                        this.speedPxS
                 );
+
+                newDrone.isPriority = isPriority;
 
                 Random randType = new Random(droneJsonObj.toString().hashCode());
                 Random randID = new Random(droneJsonObj.toString().hashCode());
@@ -189,6 +206,8 @@ public class RTTAGDPSimulation extends Simulation {
 
                 double prob = probOfCancellation.apply( - (newDrone.getIntentArrivalTime() - newDrone.startTime));
                 boolean cancel = randCancellation.nextDouble() < prob;
+
+
 
                 if ( cancel ) {
                     newDrone.setCancelsBeforeStart(true);
@@ -210,20 +229,53 @@ public class RTTAGDPSimulation extends Simulation {
 
 
     protected void resolveAllConflicts() throws Exception {
-        while(!dronesToLaunch.isEmpty()){
+        while(!dronesToLaunch.isEmpty()) {
             Drone nextDrone = dronesToLaunch.poll();
 //            System.out.format("Start time: %.1f; Intent arrival: %.1f; RTTA time: %.1f %n", nextDrone.startTime, nextDrone.intentArrivalTime, nextDrone.getRTTATime(this.RTTA));
 
+            if (nextDrone.isPriority) {
+                // If the drone is a priority one, we reschedule all the drones that are in conflict with it and not departed yet
+                List<Drone> conflictingDrones = findAllConflicts(nextDrone);
+                for (Drone conflictingDrone : conflictingDrones) {
+                    if (conflictingDrone.startTime >= nextDrone.getRTTATime(this.RTTA) && !conflictingDrone.isPriority) {
+                        conflictingDrone.wasRescheduledAfterRTTA = true;
+                        launchedDrones.remove(conflictingDrone);
+                        dronesToLaunch.add(conflictingDrone);
+                    }
+                }
+            }
+            // Plan as normal
             boolean isAnyConflict = resolveFirstConflict(nextDrone);
 
-            while(isAnyConflict){
+            while (isAnyConflict) {
                 isAnyConflict = resolveFirstConflict(nextDrone);
             }
 
             launchedDrones.add(nextDrone);
         }
-
         testResults();
+    }
+
+    protected List<Drone> findAllConflicts(Drone nextDrone) throws Exception {
+        List<Drone> conflictingDrones = new ArrayList<>();
+        Drone droneToCompare = new Drone();
+        droneToCompare.endTime = nextDrone.startTime;
+        Conflict currentConflict;
+
+        for (Drone drone:
+                launchedDrones.tailSet(droneToCompare)){
+            if (drone.cancelsBeforeStart && drone.cancelDecisionTime <= nextDrone.getRTTATime(this.RTTA)) {
+                continue;
+            }
+
+            currentConflict = nextDrone.getConflictWith(drone);
+            if (currentConflict.areInConflict){
+                conflictingDrones.add(drone);
+                break;
+            }
+        }
+
+        return conflictingDrones;
     }
 
     protected boolean resolveFirstConflict(Drone nextDrone) throws Exception {
@@ -255,7 +307,7 @@ public class RTTAGDPSimulation extends Simulation {
         double expectedDelay = conflict.getNecessaryDelayTimeForFirstDrone();
         conflict.mainDrone.delay(expectedDelay);
 
-        if(conflict.mainDrone.resolvedDrones.contains(conflict.anotherDrone)){
+        if(conflict.mainDrone.resolvedDrones.contains(conflict.anotherDrone) && !conflict.mainDrone.wasRescheduledAfterRTTA){
             throw new Exception("The conflict should be already resolved");
         }
 

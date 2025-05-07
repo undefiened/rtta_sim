@@ -39,6 +39,10 @@ public class Drone implements /*Comparable<Drone>, */Serializable, datastructure
     public Long ID;
     public int type;
 
+    public boolean isPriority = false;
+    public boolean wasRescheduledAfterRTTA = false;
+    public double delayDueRescheduling = 0.0;
+
 
     public Drone(Vector2D start, Vector2D end, double startTime, double safetyZoneRadius, double speed) {
         this.start = start;
@@ -68,6 +72,9 @@ public class Drone implements /*Comparable<Drone>, */Serializable, datastructure
         totalDelay += time;
         startTime += time;
         endTime = computeEndTime();
+        if (wasRescheduledAfterRTTA) {
+            delayDueRescheduling += time;
+        }
     }
 
     public boolean wasDelayed(){
@@ -205,10 +212,14 @@ public class Drone implements /*Comparable<Drone>, */Serializable, datastructure
     }
 
     public double getRTTATime(double RTTA) {
-        if (this.getIntentArrivalTime() > this.originalStartTime - RTTA) {
+        if (isPriority){
             return this.getIntentArrivalTime();
         } else {
-            return this.originalStartTime - RTTA;
+            if (this.getIntentArrivalTime() > this.originalStartTime - RTTA) {
+                return this.getIntentArrivalTime();
+            } else {
+                return this.originalStartTime - RTTA;
+            }
         }
     }
 

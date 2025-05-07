@@ -21,59 +21,69 @@ public class RunGDPSimulation {
 //        double[] safetyZones = {10, 50, 100, 150, 200, 300};
 //        double[] safetyZones = {50, 100, 150, 200, 250};
         double[] safetyZones = {150, };
-        double[] RTTAs = {60*5, 60*10, 60*15, 60*20, 60*25, 60*30, 60*35, 60*40, 60*45, 60*50, 60*55, 60*60,
-                          60*65, 60*70, 60*75, 60*80, 60*85, 60*90, 60*95, 60*100, 60*105, 60*110, 60*115, 60*120,
-                          60*125, 60*130, 60*135, 60*140, 60*145, 60*150, 60*155, 60*160, 60*165, 60*170, 60*175, 60*180,
-                          60*185, 60*190, 60*195, 60*200, 60*205, 60*210, 60*215, 60*220, 60*225, 60*230, 60*235, 60*240,
-        };
+//        double[] RTTAs = {60*5, 60*10, 60*15, 60*20, 60*25, 60*30, 60*35, 60*40, 60*45, 60*50, 60*55, 60*60,
+//                          60*65, 60*70, 60*75, 60*80, 60*85, 60*90, 60*95, 60*100, 60*105, 60*110, 60*115, 60*120,
+//                          60*125, 60*130, 60*135, 60*140, 60*145, 60*150, 60*155, 60*160, 60*165, 60*170, 60*175, 60*180,
+//                          60*185, 60*190, 60*195, 60*200, 60*205, 60*210, 60*215, 60*220, 60*225, 60*230, 60*235, 60*240,
+//        };
+
+        double[] RTTAs = {60*130,};
 
 //        double[] weatherCoefficients = {0.0, 1.0/(60.0*10), 1.0/(60.0*5), 1.0/(60.0*2.5), 1.0/(60.0*2), 1.0/(60.0*1.3333333333333333), 1.0/(60.0*1)}; // How much the safety radius is increased due to uncertainty at higher RTTA values. In meters per second
 //        double[] weatherCoefficients = {0.0, 1.0/(60.0*10), 1.0/(60.0*5), 1.0/(60.0*2.5), 1.0/(60.0*2)};
-        double[] weatherCoefficients = {1.0/(60.0*1.3333333333333333), 1.0/(60.0*1)};
+//        double[] weatherCoefficients = {1.0/(60.0*1.3333333333333333), 1.0/(60.0*1)};
+        double[] weatherCoefficients = {0.0, };
+//        double[] speedsMS = {25, 24.7481, 23.9678, 22.5695, 20.3137};
+        double[] speedsMS = {25, };
 //        weatherCoefficient = 0;
 //        double[] RTTAs = {60*10, 60*40, 60*60, 60*120, 60*180, 60*240};
 //        double[] RTTAs = {60*10};
 //        double[] RTTAs = {60*10, };
         int numberOfDronesToTest = 50000;
+        double probabilityOfPriority = 0.2;
         String region = "nk";
 //        region = "nk_20ms";
 //        region = "bay";
 
-        for (double weatherCoefficient: weatherCoefficients) {
-            for (double safetyZone :
-                    safetyZones) {
-                for (int n :
-                        ns) {
-                    JSONArray res = new JSONArray();
-                    for (double RTTA : RTTAs) {
-                        RTTAGDPSimulation simulationResult = simulate(n, safetyZone, RTTA, region, weatherCoefficient);
-                        JSONObject serializedResult = new JSONObject();
+        for (double speedMS: speedsMS) {
+            for (double weatherCoefficient: weatherCoefficients) {
+                for (double safetyZone :
+                        safetyZones) {
+                    for (int n :
+                            ns) {
+                        JSONArray res = new JSONArray();
+                        for (double RTTA : RTTAs) {
+                            RTTAGDPSimulation simulationResult = simulate(n, safetyZone, RTTA, region, weatherCoefficient, speedMS, probabilityOfPriority);
+                            JSONObject serializedResult = new JSONObject();
 
-                        serializedResult.put("RTTA", RTTA);
-                        serializedResult.put("drones", simulationResult.getSerializedResults());
-                        res.add(serializedResult);
+                            serializedResult.put("RTTA", RTTA);
+                            serializedResult.put("drones", simulationResult.getSerializedResults());
+                            res.add(serializedResult);
+                        }
+
+
+                        JSONObject obj = new JSONObject();
+                        obj.put("safetyZone", safetyZone);
+                        obj.put("n", n);
+                        obj.put("res", res);
+                        obj.put("weather_coefficient", weatherCoefficient);
+                        obj.put("speed", speedMS);
+                        obj.put("percentage_of_priority", probabilityOfPriority);
+                        String truncatedWeatherCoefficient = String.format("%.2g", weatherCoefficient);
+                        Files.write(Paths.get("results/RTTA_" + n + "_" + safetyZone + "_" + truncatedWeatherCoefficient + "_" + speedMS + "_" + probabilityOfPriority + ".json"), obj.toJSONString().getBytes());
+                        System.gc();
                     }
-
-
-                    JSONObject obj = new JSONObject();
-                    obj.put("safetyZone", safetyZone);
-                    obj.put("n", n);
-                    obj.put("res", res);
-                    obj.put("weather_coefficient", weatherCoefficient);
-                    String truncatedWeatherCoefficient = String.format("%.2g", weatherCoefficient);
-                    Files.write(Paths.get("results/RTTA_" + n + "_" + safetyZone + "_" + truncatedWeatherCoefficient + ".json"), obj.toJSONString().getBytes());
-                    System.gc();
                 }
             }
         }
     }
 
-    public static RTTAGDPSimulation simulate(int n, double safetyZone, double RTTA, String region, double weatherCoefficient) throws Exception {
+    public static RTTAGDPSimulation simulate(int n, double safetyZone, double RTTA, String region, double weatherCoefficient, double speed, double probabilityOfPriority) throws Exception {
         System.out.println("-------------------------------------------");
         System.out.println(n + " " + safetyZone);
         System.out.println("-------------------------------------------");
 //        conflictsNumberSimulation(n, safetyZone, region);
-        return gdpSimulation(n, safetyZone, RTTA, region, weatherCoefficient);
+        return gdpSimulation(n, safetyZone, RTTA, region, weatherCoefficient, speed, probabilityOfPriority);
     }
 
     public static void conflictsNumberSimulation(int n, double safetyZone, String region) throws Exception {
@@ -100,7 +110,7 @@ public class RunGDPSimulation {
         return (long) sim.numberOfNewConflicts;
     }
 
-    public static RTTAGDPSimulation gdpSimulation(int n, double safetyZone, double RTTA, String region, double weatherCoefficient) throws Exception {
+    public static RTTAGDPSimulation gdpSimulation(int n, double safetyZone, double RTTA, String region, double weatherCoefficient, double speed, double probabilityOfPriority) throws Exception {
         System.out.println("Start of GDP simulation");
         int maxDelay = 60*15;
         RTTAGDPSimulation sim2 = new RTTAGDPSimulation(
@@ -122,7 +132,9 @@ public class RunGDPSimulation {
                         return maxProbabilityOfCancelling * ((x - minBoundary)/(maxBoundary-minBoundary));
                     }
                 },
-                weatherCoefficient
+                weatherCoefficient,
+                speed,
+                probabilityOfPriority
         );
 
         long cancelledScheduled = sim2.launchedDrones.stream().filter(x -> x.cancelsBeforeStart && x.originalStartTime - x.cancelDecisionTime <= RTTA).count();
