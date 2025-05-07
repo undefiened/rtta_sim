@@ -41,6 +41,7 @@ public class AllParams implements Serializable{
         allParams.put("nk", new Params(131, 90f, 1));
         allParams.put("nk_20ms", new Params(131, 72f, 1));
         allParams.put("nk_noise", new Params(131, 60f));
+        allParams.put("projected_crs", new Params(1, 30f));
         allParams.put("test_area", new Params(1, 30f));
 
         return allParams.get(region);

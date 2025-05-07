@@ -12,38 +12,26 @@ import java.util.Vector;
  */
 public class RunGDPSimulation {
     public static void main(String[] args) throws Exception {
-//        int[] ns = {10, 100, 1000, 5000, 10000, 20000, 30000, 40000, 50000};
-//        int[] ns = {10, 100, 1000, 5000, 10000, 20000, 30000};
-//        int[] ns = {12000, 18000, 24000};
-//        int[] ns = {20000, 20100, 20200, 20300, 20600, 20700};
-        int[] ns = {20000, };
-//        double[] safetyZones = {50, 100, 150, 200, 250, 300};
-//        double[] safetyZones = {10, 50, 100, 150, 200, 300};
-//        double[] safetyZones = {50, 100, 150, 200, 250};
-        double[] safetyZones = {150, };
-//        double[] RTTAs = {60*5, 60*10, 60*15, 60*20, 60*25, 60*30, 60*35, 60*40, 60*45, 60*50, 60*55, 60*60,
-//                          60*65, 60*70, 60*75, 60*80, 60*85, 60*90, 60*95, 60*100, 60*105, 60*110, 60*115, 60*120,
-//                          60*125, 60*130, 60*135, 60*140, 60*145, 60*150, 60*155, 60*160, 60*165, 60*170, 60*175, 60*180,
-//                          60*185, 60*190, 60*195, 60*200, 60*205, 60*210, 60*215, 60*220, 60*225, 60*230, 60*235, 60*240,
-//        };
+        int[] ns = {10, 100, 1000, 5000, 10000, 20000, 30000, 40000, 50000}; // different scenarios with different numbers of drones to simulate
 
-        double[] RTTAs = {60*130,};
+        double[] safetyZones = {50, 100, 150, 200, 250, 300}; // different scenarios with different safety zones radii
 
-//        double[] weatherCoefficients = {0.0, 1.0/(60.0*10), 1.0/(60.0*5), 1.0/(60.0*2.5), 1.0/(60.0*2), 1.0/(60.0*1.3333333333333333), 1.0/(60.0*1)}; // How much the safety radius is increased due to uncertainty at higher RTTA values. In meters per second
-//        double[] weatherCoefficients = {0.0, 1.0/(60.0*10), 1.0/(60.0*5), 1.0/(60.0*2.5), 1.0/(60.0*2)};
-//        double[] weatherCoefficients = {1.0/(60.0*1.3333333333333333), 1.0/(60.0*1)};
-        double[] weatherCoefficients = {0.0, };
-//        double[] speedsMS = {25, 24.7481, 23.9678, 22.5695, 20.3137};
-        double[] speedsMS = {25, };
-//        weatherCoefficient = 0;
-//        double[] RTTAs = {60*10, 60*40, 60*60, 60*120, 60*180, 60*240};
-//        double[] RTTAs = {60*10};
-//        double[] RTTAs = {60*10, };
+        double[] RTTAs = {60*5, 60*10, 60*15, 60*20, 60*25, 60*30, 60*35, 60*40, 60*45, 60*50, 60*55, 60*60,
+                          60*65, 60*70, 60*75, 60*80, 60*85, 60*90, 60*95, 60*100, 60*105, 60*110, 60*115, 60*120,
+                          60*125, 60*130, 60*135, 60*140, 60*145, 60*150, 60*155, 60*160, 60*165, 60*170, 60*175, 60*180,
+                          60*185, 60*190, 60*195, 60*200, 60*205, 60*210, 60*215, 60*220, 60*225, 60*230, 60*235, 60*240,
+        }; // different scenarios with different RTTA's
+
+        double[] weatherCoefficients = {0.0, 1.0/(60.0*10), 1.0/(60.0*5), 1.0/(60.0*2.5), 1.0/(60.0*2), 1.0/(60.0*1.3333333333333333), 1.0/(60.0*1)}; // How much the safety radius is increased due to uncertainty at higher RTTA values. In meters per second
+
+        double[] speedsMS = {25, }; // different scenarios with different drone speeds
+
         int numberOfDronesToTest = 50000;
-        double probabilityOfPriority = 0.2;
+        double probabilityOfPriority = 0.2; // How many flights are priority flights (police, etc.). By default should be 0
+
         String region = "nk";
-//        region = "nk_20ms";
-//        region = "bay";
+        // 🚨 Use the "projected_crs" region instead of nk if you are using a data file with positions based on some projected CRS where 1 unit = 1 meter
+        // String region = "projected_crs";
 
         for (double speedMS: speedsMS) {
             for (double weatherCoefficient: weatherCoefficients) {
