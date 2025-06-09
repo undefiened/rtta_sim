@@ -15,7 +15,7 @@ public class DronesFiles implements Serializable{
         if(Objects.equals(region, "nk")){
             dronesJson = "./data/norrkoping_drones.json";
         } else {
-            dronesJson = "/home/undefiened/simulations/data/drones_bay_100k.json";
+            dronesJson = "./data/drones_requests.json";
         }
 
         return new FileReader(dronesJson);

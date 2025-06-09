@@ -29,9 +29,10 @@ public class RunGDPSimulation {
         int numberOfDronesToTest = 50000;
         double probabilityOfPriority = 0.2; // How many flights are priority flights (police, etc.). By default should be 0
 
-        String region = "nk";
-        // 🚨 Use the "projected_crs" region instead of nk if you are using a data file with positions based on some projected CRS where 1 unit = 1 meter
-        // String region = "projected_crs";
+        // String region = "nk";
+        // 🚨 Use the "projected_crs" reion instead of nk if you are using a data file with positions based on some projected CRS where 1 unit = 1 meter
+        // The path to the data file should be set in the DronesFiles class
+        String region = "projected_crs";
 
         for (double speedMS: speedsMS) {
             for (double weatherCoefficient: weatherCoefficients) {
@@ -140,7 +141,7 @@ public class RunGDPSimulation {
         //use buffering
         String folderName = "results";
 
-        if(!region.equals("nk")){
+        if(region.equals("bay")){
             folderName = "results_bay";
         }
 

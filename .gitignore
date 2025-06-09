@@ -1,0 +1,40 @@
+# Ignore build directories
+build/
+out/
+
+# Ignore compiled Java files
+*.class
+
+# Ignore logs and temporary files
+*.log
+*.tmp
+
+# Ignore IDE-specific files
+*.iml
+.idea/
+*.vscode/
+
+# Ignore all pictures from the root directory
+/*.png
+/*.jpg
+/*.jpeg
+/*.gif
+/*.bmp
+/*.svg
+/*.webp
+
+# Ignore JAR and WAR files
+*.jar
+*.war
+
+.xdp-*
+*.mat
+rtta_plotting.zip
+
+# Ignore Gradle files
+.gradle/
+build/
+!gradle-wrapper.jar
+
+results/
+results_converted/
